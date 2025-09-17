@@ -1,12 +1,13 @@
+---
 name: 🥇 Daily Gold Price Forecast
 
 on:
   schedule:
     # Run at 6:00 AM EST (11:00 UTC) every day
     - cron: '0 11 * * *'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch: {}
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'scripts/**'
       - '.github/workflows/**'
@@ -35,7 +36,7 @@ jobs:
       - name: 📦 Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements-ci.txt  # Minimal requirements for CI
+          pip install -r requirements-ci.txt
 
       - name: 📊 Fetch Latest Market Data
         env:
@@ -44,68 +45,78 @@ jobs:
           echo "🔍 Fetching latest gold price data..."
           mkdir -p docs/data
           python scripts/data_fetcher.py
-
           echo "📈 Market data fetch completed!"
-          if [ -f "docs/data/market_data.json" ]; then
-            echo "✅ Market data file created successfully"
-            ls -la docs/data/
-          else
+          if [ ! -f "docs/data/market_data.json" ]; then
             echo "❌ Market data file not found"
             exit 1
           fi
+          echo "✅ Market data file created successfully"
+          ls -la docs/data/
 
       - name: 🤖 Generate ML Predictions
         run: |
           echo "🧠 Running ML prediction models..."
           python scripts/model_predictor.py
-
           echo "🔮 Predictions generated!"
-          if [ -f "docs/data/latest_forecast.json" ]; then
-            echo "✅ Forecast file created successfully"
-            python3 -c 'import json; data = json.load(open("docs/data/latest_forecast.json")); current = data.get("current_price", 0) or 0; ensemble = (data.get("predictions", {}).get("models", {}).get("ensemble") or [0]); print(f"📊 Current Price: ${current:.2f}"); print(f"🔮 Tomorrow Prediction: ${float(ensemble[0]):.2f}") if ensemble else None; trend = data.get("insights", {}).get("trend", {}).get("direction", "Unknown"); print(f"📈 Trend: {trend}")'
-          else
+          if [ ! -f "docs/data/latest_forecast.json" ]; then
             echo "❌ Forecast file not found"
             exit 1
           fi
+          echo "✅ Forecast file created successfully"
+          python3 -c '
+import json
+data = json.load(open("docs/data/latest_forecast.json"))
+current = data.get("current_price", 0) or 0
+ensemble = (
+    data.get("predictions", {})
+    .get("models", {})
+    .get("ensemble") or [0]
+)
+trend = (
+    data.get("insights", {})
+    .get("trend", {})
+    .get("direction", "Unknown")
+)
+print(f"📊 Current Price: ${current:.2f}")
+if ensemble:
+    print(f"🔮 Tomorrow Prediction: ${float(ensemble[0]):.2f}")
+print(f"📈 Trend: {trend}")
+'
 
       - name: 📱 Update Web App Data
         run: |
           echo "🌐 Preparing data for web application..."
-
-          # Create or update the web app data file
           cat > update_web_data.py <<'EOF'
           import json
           import sys
           from datetime import datetime
 
-          # Load forecast data
           try:
               with open('docs/data/latest_forecast.json', 'r') as f:
                   forecast = json.load(f)
-
               with open('docs/data/market_data.json', 'r') as f:
                   market = json.load(f)
-
-              # Create web-friendly data structure
               web_data = {
                   'timestamp': datetime.now().isoformat(),
                   'current_price': forecast.get('current_price', 0),
                   'predictions': forecast.get('predictions', {}),
                   'confidence': forecast.get('confidence', {}),
                   'insights': forecast.get('insights', {}),
-                  'model_performance': forecast.get('model_performance', {}),
-                  'historical_data': market.get('gold_price', {}).get('data', [])[-30:],
-                  'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
-                  'data_source': market.get('gold_price', {}).get('source', 'Unknown'),
+                  'model_performance': forecast.get(
+                      'model_performance', {}
+                  ),
+                  'historical_data': market.get('gold_price', {})
+                  .get('data', [])[-30:],
+                  'last_updated': datetime.now().strftime(
+                      '%Y-%m-%d %H:%M:%S UTC'
+                  ),
+                  'data_source': market.get('gold_price', {})
+                  .get('source', 'Unknown'),
                   'next_update': 'Daily at 6:00 AM EST'
               }
-
-              # Save web data
               with open('docs/data/web_data.json', 'w') as f:
                   json.dump(web_data, f, indent=2, default=str)
-
               print('✅ Web application data updated successfully!')
-
           except Exception as e:
               print(f'❌ Error updating web data: {e}')
               sys.exit(1)
@@ -118,79 +129,79 @@ EOF
           cat > generate_report.py <<'EOF'
           import json
           import os
+          import sys
           from datetime import datetime, timedelta
 
           try:
-              # Load current forecast
               with open('docs/data/latest_forecast.json', 'r') as f:
-                  current_forecast = json.load(f)
+                  fc = json.load(f)
 
-              # Create performance log entry
               log_entry = {
                   'date': datetime.now().strftime('%Y-%m-%d'),
                   'timestamp': datetime.now().isoformat(),
-                  'current_price': current_forecast.get('current_price', 0),
+                  'current_price': fc.get('current_price', 0),
                   'predictions': {
-                      model: preds[0] if preds else 0
-                      for model, preds in current_forecast.get('predictions', {}).get('models', {}).items()
+                      m: p[0] if p else 0 for m, p in
+                      fc.get('predictions', {}).get('models', {}).items()
                   },
                   'confidence': {
-                      model: conf.get('avg_confidence', 0)
-                      for model, conf in current_forecast.get('confidence', {}).items()
+                      m: c.get('avg_confidence', 0)
+                      for m, c in fc.get('confidence', {}).items()
                   }
               }
-
-              # Load existing performance log
               log_file = 'docs/data/performance_log.json'
+              perf_log = {'entries': []}
               if os.path.exists(log_file):
                   with open(log_file, 'r') as f:
-                      performance_log = json.load(f)
-              else:
-                  performance_log = {'entries': []}
-
-              # Add new entry
-              performance_log['entries'].append(log_entry)
-
-              # Keep only last 30 days
-              cutoff_date = datetime.now() - timedelta(days=30)
-              performance_log['entries'] = [
-                  entry for entry in performance_log['entries']
-                  if datetime.fromisoformat(entry['timestamp'].replace('Z', '+00:00')) > cutoff_date
+                      perf_log = json.load(f)
+              perf_log['entries'].append(log_entry)
+              cutoff = datetime.now() - timedelta(days=30)
+              perf_log['entries'] = [
+                  e for e in perf_log['entries'] if
+                  datetime.fromisoformat(
+                      e['timestamp'].replace('Z', '+00:00')
+                  ) > cutoff
               ]
-
-              # Save updated log
               with open(log_file, 'w') as f:
-                  json.dump(performance_log, f, indent=2, default=str)
-
-              print(f'✅ Performance log updated with {len(performance_log["entries"])} entries')
-
+                  json.dump(perf_log, f, indent=2, default=str)
+              print(
+                  '✅ Performance log updated with '
+                  f'{len(perf_log["entries"])} entries'
+              )
           except Exception as e:
               print(f'❌ Error generating performance report: {e}')
+              sys.exit(1)
 EOF
           python3 generate_report.py
 
       - name: 🎯 Commit and Push Results
         run: |
           echo "💾 Committing forecast results..."
-
-          # Configure git
           git config --local user.email "action@github.com"
           git config --local user.name "Gold Forecast Bot"
-
-          # Add all data files
           git add docs/data/
-
-          # Create summary for commit message
           cat > generate_commit_msg.py <<'EOF'
           import json
+          import sys
           from datetime import datetime
           try:
               with open('docs/data/latest_forecast.json', 'r') as f:
                   data = json.load(f)
               current = data.get('current_price', 0) or 0
-              ensemble = (data.get('predictions', {}).get('models', {}).get('ensemble') or [0])
-              trend = data.get('insights', {}).get('trend', {}).get('direction', 'Unknown')
-              print('🤖 Daily forecast update ' + datetime.utcnow().strftime('%Y-%m-%d'))
+              ensemble = (
+                  data.get('predictions', {})
+                  .get('models', {})
+                  .get('ensemble') or [0]
+              )
+              trend = (
+                  data.get('insights', {})
+                  .get('trend', {})
+                  .get('direction', 'Unknown')
+              )
+              print(
+                  '🤖 Daily forecast update ' +
+                  datetime.utcnow().strftime('%Y-%m-%d')
+              )
               print()
               print(f'📊 Current: ${current:.2f}')
               if ensemble and ensemble[0] is not None:
@@ -199,10 +210,12 @@ EOF
               print()
               print('Generated by automated ML pipeline')
           except Exception as e:
-              print(f'🤖 Daily forecast update (error getting details: {e})')
+              print(
+                  '🤖 Daily forecast update '
+                  f'(error getting details: {e})'
+              )
 EOF
           python3 generate_commit_msg.py > commit_msg.txt
-
           if git diff --staged --quiet; then
             echo "📝 No changes to commit"
           else
@@ -216,72 +229,83 @@ EOF
         run: |
           echo "✅ Data updated successfully!"
           echo "GitHub Pages will automatically deploy from the docs/ folder"
-          echo "🌐 Live site: https://vikyath-n.github.io/Gold-Price-Forecasting-ML/"
+          OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
+          REPO=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
+          echo "🌐 Live site: https://${OWNER}.github.io/${REPO}/"
 
       - name: 📊 Workflow Summary
         run: |
           echo "## 🥇 Gold Price Forecast Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f "docs/data/latest_forecast.json" ]; then
-            cat > generate_summary.py <<'EOF'
-            import json
-            import sys
-
-            try:
-                with open('docs/data/latest_forecast.json', 'r') as f:
-                    data = json.load(f)
-
-                current = data.get('current_price', 0)
-                predictions = data.get('predictions', {}).get('models', {})
-                insights = data.get('insights', {})
-
-                print(f'### 📊 Market Data')
-                if current is not None:
-                    print(f'- **Current Price**: ${current:.2f}')
-                print(f'- **Data Source**: {data.get("metadata", {}).get("data_points", 0)} historical points')
-                print('')
-
-                print(f'### 🔮 Tomorrow Predictions')
-                if predictions:
-                    for model, preds in predictions.items():
-                        if preds and preds[0] is not None:
-                            print(f'- **{model.upper()}**: ${preds[0]:.2f}')
-                else:
-                    print('- No predictions available.')
-                print('')
-
-                print(f'### 📈 Market Insights')
-                trend = insights.get('trend', {})
-                print(f'- **Trend**: {trend.get("direction", "Unknown")} ({trend.get("change_percent", 0):.2f}%)')
-                print(f'- **Volatility**: {insights.get("volatility", {}).get("level", "Unknown")}')
-                print(f'- **Support**: ${insights.get("key_levels", {}).get("support", 0):.2f}')
-                print(f'- **Resistance**: ${insights.get("key_levels", {}).get("resistance", 0):.2f}')
-                print('')
-
-                print(f'### 🎯 Model Performance')
-                performance = data.get('model_performance', {})
-                if performance:
-                    for model, accuracy in performance.items():
-                        print(f'- **{model.upper()}**: {accuracy:.1f}% accuracy')
-                else:
-                    print('- No performance data available.')
-
-            except Exception as e:
-                print(f'❌ Error generating summary: {e}')
-                sys.exit(1)
-EOF
-            python3 generate_summary.py >> $GITHUB_STEP_SUMMARY
-          else
+          if [ ! -f "docs/data/latest_forecast.json" ]; then
             echo "❌ Forecast data not available" >> $GITHUB_STEP_SUMMARY
+            exit 0
           fi
-
+          cat > generate_summary.py <<'EOF'
+          import json
+          import sys
+          try:
+              with open('docs/data/latest_forecast.json', 'r') as f:
+                  data = json.load(f)
+              current = data.get('current_price', 0)
+              preds = data.get('predictions', {}).get('models', {})
+              insights = data.get('insights', {})
+              print('### 📊 Market Data')
+              if current is not None:
+                  print(f'- **Current Price**: ${current:.2f}')
+              print(
+                  f'- **Data Source**: '
+                  f'{data.get("metadata", {}).get("data_points", 0)} '
+                  'historical points'
+              )
+              print('')
+              print('### 🔮 Tomorrow Predictions')
+              if preds:
+                  for m, p in preds.items():
+                      if p and p[0] is not None:
+                          print(f'- **{m.upper()}**: ${p[0]:.2f}')
+              else:
+                  print('- No predictions available.')
+              print('')
+              print('### 📈 Market Insights')
+              trend = insights.get('trend', {})
+              print(
+                  f'- **Trend**: {trend.get("direction", "Unknown")} '
+                  f'({trend.get("change_percent", 0):.2f}%)'
+              )
+              print(
+                  '- **Volatility**: '
+                  f'{insights.get("volatility", {}).get("level", "Unknown")}'
+              )
+              print(
+                  f'- **Support**: $'
+                  f'{insights.get("key_levels", {}).get("support", 0):.2f}'
+              )
+              print(
+                  f'- **Resistance**: $'
+                  f'{insights.get("key_levels", {}).get("resistance", 0):.2f}'
+              )
+              print('')
+              print('### 🎯 Model Performance')
+              perf = data.get('model_performance', {})
+              if perf:
+                  for m, acc in perf.items():
+                      print(f'- **{m.upper()}**: {acc:.1f}% accuracy')
+              else:
+                  print('- No performance data available.')
+          except Exception as e:
+              print(f'❌ Error generating summary: {e}')
+              sys.exit(1)
+EOF
+          python3 generate_summary.py >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🕐 **Generated**: $(date)" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **Dashboard**: [View Live Dashboard](https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/)" >> $GITHUB_STEP_SUMMARY
+          OWNER=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f1)
+          REPO=$(echo "$GITHUB_REPOSITORY" | cut -d'/' -f2)
+          URL="https://${OWNER}.github.io/${REPO}/"
+          echo "🌐 **Dashboard**: [View Live Dashboard](${URL})" >> $GITHUB_STEP_SUMMARY
 
-  # Notify on failure (optional)
   notify-failure:
     needs: forecast
     runs-on: ubuntu-latest
@@ -291,4 +315,3 @@ EOF
         run: |
           echo "❌ Daily forecast pipeline failed!"
           echo "Please check the workflow logs for details."
-          # Add notification logic here (email, Slack, etc.) if needed
