@@ -73,7 +73,7 @@ jobs:
           echo "🌐 Preparing data for web application..."
 
           # Create or update the web app data file
-          cat > update_web_data.py << 'WEBDATA'
+          cat > update_web_data.py <<EOF
           import json
           import sys
           from datetime import datetime
@@ -109,13 +109,13 @@ jobs:
           except Exception as e:
               print(f'❌ Error updating web data: {e}')
               sys.exit(1)
-          WEBDATA
+          EOF
           python3 update_web_data.py
 
       - name: 📈 Generate Performance Report
         run: |
           echo "📊 Generating performance report..."
-          cat > generate_report.py << 'EOF'
+          cat > generate_report.py <<EOF
           import json
           import os
           from datetime import datetime, timedelta
@@ -127,7 +127,7 @@ jobs:
 
               # Create performance log entry
               log_entry = {
-                  'date': datetime.now().strftime('%Y-%m-%d'),
+                  'date': datetime.now().strftime('%Y-%-m-%-d'),
                   'timestamp': datetime.now().isoformat(),
                   'current_price': current_forecast.get('current_price', 0),
                   'predictions': {
@@ -181,7 +181,7 @@ jobs:
           git add docs/data/
 
           # Create summary for commit message
-          cat > generate_commit_msg.py << 'EOF'
+          cat > generate_commit_msg.py <<EOF
           import json
           from datetime import datetime
           try:
@@ -224,7 +224,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "docs/data/latest_forecast.json" ]; then
-            cat > generate_summary.py << 'EOF'
+            cat > generate_summary.py <<EOF
             import json
             import sys
 
