@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🥇 Gold Price Forecasting AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-coins"></i> Gold Price Forecasting AI</h1>
+                <p>Real-time ML-powered gold price predictions using deep learning models</p>
+            </div>
+            <div class="status-indicators">
+                <div class="status-item">
+                    <span class="status-label">Last Update:</span>
+                    <span id="lastUpdate" class="status-value">Loading...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Current Price:</span>
+                    <span id="currentPrice" class="status-value price">$---.--</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Price Cards -->
+            <section class="price-cards">
+                <div class="card prediction-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Today's Prediction</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="prediction-value">
+                            <span id="todayPrediction" class="prediction-price">$---.--</span>
+                            <span id="predictionChange" class="prediction-change">---%</span>
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceBar"></div>
+                        </div>
+                        <p class="confidence-text">Confidence: <span id="confidenceValue">--%</span></p>
+                    </div>
+                </div>
+
+                <div class="card stats-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-bar"></i> 7-Day Outlook</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Predicted High</span>
+                                <span id="weekHigh" class="stat-value">$---.--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Predicted Low</span>
+                                <span id="weekLow" class="stat-value">$---.--</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Trend</span>
+                                <span id="weekTrend" class="stat-value trend">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card model-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-robot"></i> Model Performance</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="model-list">
+                            <div class="model-item">
+                                <span class="model-name">Bi-GRU</span>
+                                <span class="model-accuracy" id="biGruAccuracy">--%</span>
+                            </div>
+                            <div class="model-item">
+                                <span class="model-name">TCN</span>
+                                <span class="model-accuracy" id="tcnAccuracy">--%</span>
+                            </div>
+                            <div class="model-item">
+                                <span class="model-name">Transformer</span>
+                                <span class="model-accuracy" id="transformerAccuracy">--%</span>
+                            </div>
+                            <div class="model-item best">
+                                <span class="model-name">Ensemble</span>
+                                <span class="model-accuracy" id="ensembleAccuracy">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-area"></i> Price History & Predictions</h3>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" data-period="7">7D</button>
+                            <button class="chart-btn" data-period="30">30D</button>
+                            <button class="chart-btn" data-period="90">90D</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Model Comparison -->
+            <section class="model-comparison">
+                <div class="comparison-header">
+                    <h3><i class="fas fa-balance-scale"></i> Model Predictions Comparison</h3>
+                </div>
+                <div class="comparison-chart-wrapper">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Deep Learning Models | Data updated every 6 hours | 
+               <a href="https://github.com/Vikyath-N/Gold-Price-Forecasting-ML" target="_blank">
+                   <i class="fab fa-github"></i> View Source
+               </a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading AI Models...</p>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,30 +1,38 @@
+# Gold Price Forecasting ML - Requirements
 # Core ML and Data Science Libraries
-tensorflow==2.16.1
-numpy==1.24.3
-pandas>=1.5.0
-scikit-learn>=1.3.0
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+joblib>=1.1.0
 
-# Data Visualization
-matplotlib>=3.6.0
-seaborn>=0.12.0
-plotly>=5.15.0
+# Web Scraping and API Libraries
+requests>=2.25.0
+beautifulsoup4>=4.9.0
+yfinance>=0.1.70
 
-# Financial Data APIs
-yfinance>=0.2.18
-pandas-datareader>=0.10.0
+# Data Visualization (for local development)
+matplotlib>=3.4.0
+seaborn>=0.11.0
+plotly>=5.0.0
 
-# Jupyter and Development
-jupyter>=1.0.0
-notebook>=6.5.0
-ipykernel>=6.25.0
+# Time Series and ML Libraries
+tensorflow>=2.8.0
+torch>=1.10.0
+transformers>=4.15.0
 
-# Additional Utilities
-tqdm>=4.65.0
-kaggle>=1.5.16
+# Utility Libraries
+python-dateutil>=2.8.0
+pytz>=2021.1
+tqdm>=4.62.0
 
-# Optional GPU Support (uncomment if using CUDA)
-# tensorflow-gpu==2.16.1
+# Development and Testing
+pytest>=6.2.0
+black>=21.0.0
+flake8>=3.9.0
 
-# For ensemble methods and advanced preprocessing
-scipy>=1.10.0
-joblib>=1.3.0
+# Optional: For enhanced model serving
+flask>=2.0.0
+gunicorn>=20.1.0
+
+# Note: Some dependencies may be optional depending on deployment strategy
+# For GitHub Actions, only essential libraries for data fetching and prediction are needed

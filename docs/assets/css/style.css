@@ -1,0 +1,437 @@
+/* Modern Gold Price Forecasting Dashboard */
+:root {
+    --primary-gold: #FFD700;
+    --dark-gold: #B8860B;
+    --light-gold: #FFF8DC;
+    --bg-primary: #0F1419;
+    --bg-secondary: #1A1F2E;
+    --bg-card: #242B3D;
+    --text-primary: #FFFFFF;
+    --text-secondary: #B0BEC5;
+    --accent-green: #4CAF50;
+    --accent-red: #F44336;
+    --border-color: #37474F;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header Styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 0;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.header-content h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(45deg, var(--primary-gold), var(--dark-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
+
+.header-content p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.status-indicators {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.status-item {
+    text-align: center;
+}
+
+.status-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.status-value {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.price {
+    color: var(--primary-gold);
+    font-size: 1.5rem !important;
+}
+
+/* Dashboard Grid */
+.dashboard {
+    display: grid;
+    gap: 30px;
+}
+
+/* Price Cards */
+.price-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.2);
+}
+
+.card-header {
+    padding: 20px 20px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h3 {
+    color: var(--primary-gold);
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+.card-content {
+    padding: 20px;
+}
+
+/* Prediction Card */
+.prediction-value {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.prediction-price {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-gold);
+}
+
+.prediction-change {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+.prediction-change.positive {
+    background: var(--accent-green);
+    color: white;
+}
+
+.prediction-change.negative {
+    background: var(--accent-red);
+    color: white;
+}
+
+.confidence-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-red), var(--primary-gold), var(--accent-green));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.confidence-text {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+}
+
+.stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.trend.bullish {
+    color: var(--accent-green);
+}
+
+.trend.bearish {
+    color: var(--accent-red);
+}
+
+/* Model Performance */
+.model-list {
+    display: grid;
+    gap: 10px;
+}
+
+.model-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.model-item.best {
+    border-color: var(--primary-gold);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(255, 215, 0, 0.1));
+}
+
+.model-name {
+    font-weight: 600;
+}
+
+.model-accuracy {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+/* Charts Section */
+.charts-section {
+    margin: 40px 0;
+}
+
+.chart-container {
+    background: var(--bg-card);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.chart-header h3 {
+    color: var(--primary-gold);
+    font-size: 1.3rem;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.chart-btn {
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.chart-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.chart-btn.active {
+    background: var(--primary-gold);
+    color: var(--bg-primary);
+    border-color: var(--primary-gold);
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 400px;
+    margin-top: 20px;
+}
+
+/* Model Comparison */
+.model-comparison {
+    background: var(--bg-card);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin: 30px 0;
+}
+
+.comparison-header h3 {
+    color: var(--primary-gold);
+    font-size: 1.3rem;
+    margin-bottom: 20px;
+}
+
+.comparison-chart-wrapper {
+    position: relative;
+    height: 300px;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 50px;
+    color: var(--text-secondary);
+}
+
+.footer a {
+    color: var(--primary-gold);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer a:hover {
+    color: var(--dark-gold);
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 20, 25, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.loading-content i {
+    font-size: 3rem;
+    color: var(--primary-gold);
+    margin-bottom: 20px;
+    animation: spin 1s linear infinite;
+}
+
+.loading-content p {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    
+    .header-content h1 {
+        font-size: 2rem;
+    }
+    
+    .status-indicators {
+        justify-content: center;
+    }
+    
+    .price-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .chart-wrapper {
+        height: 300px;
+    }
+    
+    .comparison-chart-wrapper {
+        height: 250px;
+    }
+}
+
+@media (max-width: 480px) {
+    .prediction-value {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .prediction-price {
+        font-size: 1.5rem;
+    }
+    
+    .chart-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
