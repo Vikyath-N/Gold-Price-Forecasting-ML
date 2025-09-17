@@ -27,9 +27,6 @@ jobs:
       - name: 🚀 Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Pages
-        uses: actions/configure-pages@v4
-
       - name: 📦 Create Sample Data (if missing)
         run: |
           echo "🔍 Checking for required data files..."
@@ -40,126 +37,14 @@ jobs:
           # Create sample data files if they don't exist
           if [ ! -f "docs/data/web_data.json" ]; then
             echo "📊 Creating sample web data..."
-            python3 -c "
-import json
-from datetime import datetime, timedelta
-import random
-
-# Generate sample data
-current_price = 2000 + random.uniform(-50, 50)
-base_date = datetime.now()
-
-# Historical data (last 30 days)
-historical_data = []
-price = current_price
-for i in range(30, 0, -1):
-    date = base_date - timedelta(days=i)
-    change = random.uniform(-0.02, 0.02)  # ±2% daily change
-    price *= (1 + change)
-    historical_data.append({
-        'date': date.strftime('%Y-%m-%d'),
-        'open': round(price * 0.999, 2),
-        'high': round(price * 1.005, 2),
-        'low': round(price * 0.995, 2),
-        'close': round(price, 2),
-        'volume': random.randint(50000, 150000)
-    })
-
-# Predictions
-predictions = {
-    'dates': [(base_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, 8)],
-    'models': {
-        'bi_gru': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-        'tcn': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-        'transformer': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-        'ensemble': [round(current_price * (1 + random.uniform(-0.008, 0.008)), 2) for _ in range(7)]
-    }
-}
-
-# Web data structure
-web_data = {
-    'timestamp': datetime.now().isoformat(),
-    'current_price': round(current_price, 2),
-    'predictions': predictions,
-    'confidence': {
-        'bi_gru': {'avg_confidence': 87.5},
-        'tcn': {'avg_confidence': 85.2},
-        'transformer': {'avg_confidence': 89.1},
-        'ensemble': {'avg_confidence': 91.8}
-    },
-    'insights': {
-        'trend': {
-            'direction': random.choice(['Bullish', 'Bearish', 'Neutral']),
-            'class': 'bullish',
-            'change_percent': round(random.uniform(-2, 2), 2)
-        },
-        'volatility': {
-            'level': random.choice(['Low', 'Medium', 'High']),
-            'value': round(random.uniform(1, 3), 2)
-        },
-        'key_levels': {
-            'resistance': round(current_price * 1.02, 2),
-            'support': round(current_price * 0.98, 2)
-        }
-    },
-    'model_performance': {
-        'bi_gru': 87.5,
-        'tcn': 85.2,
-        'transformer': 89.1,
-        'ensemble': 91.8
-    },
-    'historical_data': historical_data,
-    'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'),
-    'data_source': 'Sample Data',
-    'next_update': 'Daily at 6:00 AM EST'
-}
-
-# Save to file
-with open('docs/data/web_data.json', 'w') as f:
-    json.dump(web_data, f, indent=2, default=str)
-
-print('✅ Sample web data created successfully!')
-            "
+            cp docs/data/sample_data.json docs/data/web_data.json
+            echo "✅ Sample web data created successfully!"
           fi
           
           if [ ! -f "docs/data/latest_forecast.json" ]; then
             echo "🔮 Creating sample forecast data..."
-            python3 -c "
-import json
-from datetime import datetime
-import random
-
-current_price = 2000 + random.uniform(-50, 50)
-
-forecast_data = {
-    'timestamp': datetime.now().isoformat(),
-    'current_price': round(current_price, 2),
-    'forecast_horizon': 7,
-    'predictions': {
-        'dates': [(datetime.now()).strftime('%Y-%m-%d') for _ in range(7)],
-        'models': {
-            'bi_gru': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-            'tcn': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-            'transformer': [round(current_price * (1 + random.uniform(-0.01, 0.01)), 2) for _ in range(7)],
-            'ensemble': [round(current_price * (1 + random.uniform(-0.008, 0.008)), 2) for _ in range(7)]
-        }
-    },
-    'model_performance': {
-        'bi_gru': 87.5,
-        'tcn': 85.2,
-        'transformer': 89.1,
-        'ensemble': 91.8
-    },
-    'metadata': {
-        'prediction_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
-    }
-}
-
-with open('docs/data/latest_forecast.json', 'w') as f:
-    json.dump(forecast_data, f, indent=2, default=str)
-
-print('✅ Sample forecast data created successfully!')
-            "
+            cp docs/data/sample_data.json docs/data/latest_forecast.json
+            echo "✅ Sample forecast data created successfully!"
           fi
           
           echo "✅ Data preparation completed!"
@@ -229,35 +114,28 @@ EOF
           
           # Validate JSON files
           echo "🔍 Validating JSON data..."
-          python3 -c "
-import json
-import os
-
-json_files = ['docs/data/web_data.json', 'docs/data/latest_forecast.json']
-
-for file_path in json_files:
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, 'r') as f:
-                data = json.load(f)
-            print(f'✅ {file_path} is valid JSON')
-        except json.JSONDecodeError as e:
-            print(f'❌ {file_path} has invalid JSON: {e}')
-            exit(1)
-    else:
-        print(f'⚠️  {file_path} not found')
-          "
+          for file in docs/data/web_data.json docs/data/latest_forecast.json docs/data/sample_data.json; do
+            if [ -f "$file" ]; then
+              if python3 -m json.tool "$file" > /dev/null 2>&1; then
+                echo "✅ $file is valid JSON"
+              else
+                echo "❌ $file has invalid JSON"
+                exit 1
+              fi
+            else
+              echo "⚠️  $file not found"
+            fi
+          done
           
           echo "✅ Data validation completed!"
 
-      - name: 🏗️ Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./docs
-          destination: ./_site
-
-      - name: 📤 Upload artifact
+      - name: 🏗️ Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: 📤 Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
 
   # Deployment job
   deploy:
