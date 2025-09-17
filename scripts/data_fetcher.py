@@ -12,6 +12,10 @@ from datetime import datetime, timedelta
 import numpy as np
 from typing import Dict, List, Any
 import time
+import warnings
+
+# Ignore urllib3 warnings about SSL
+warnings.filterwarnings('ignore', message='.*OpenSSL.*')
 
 class GoldDataFetcher:
     def __init__(self):
