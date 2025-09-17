@@ -52,32 +52,49 @@ class GoldForecastApp {
 
     async loadData() {
         console.log('📊 Loading market data...');
-        
-        try {
-            // Try to load real data from the API
-            const response = await fetch('./data/sample_data.json');
-            if (response.ok) {
-                const data = await response.json();
+
+        // Try multiple sources in order of freshness
+        const sources = [
+            './data/web_data.json',           // produced daily by workflow (preferred)
+            './data/latest_forecast.json',    // fallback: predictions only
+            './data/sample_data.json'         // last resort: static sample
+        ];
+
+        let loaded = false;
+        for (const url of sources) {
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`${url} not available`);
+                const data = await res.json();
                 this.processLoadedData(data);
-                console.log('✅ Loaded real market data');
-            } else {
-                throw new Error('Failed to fetch data');
+                console.log(`✅ Loaded data from ${url}`);
+                loaded = true;
+                break;
+            } catch (e) {
+                console.warn(`⚠️ Could not load ${url}:`, e.message);
             }
-        } catch (error) {
-            console.log('⚠️ Failed to load real data, using generated sample data');
-            // Fallback to generated sample data
+        }
+
+        if (!loaded) {
+            console.log('⚠️ Using generated sample data');
             await this.generateSampleData();
         }
-        
+
         // Update UI with loaded data
         this.updateUI();
     }
 
     processLoadedData(data) {
-        // Process loaded data from API
-        this.currentPrice = data.current_price || 2000;
-        this.historicalData = data.historical_data || [];
-        
+        // Normalize current price
+        this.currentPrice = Number(data.current_price || 0) || 2000;
+
+        // Normalize historical data to [{date, price}]
+        const rawHistory = data.historical_data || data.gold_price?.data || [];
+        this.historicalData = (rawHistory || []).map(d => ({
+            date: d.date,
+            price: Number(d.price ?? d.close ?? d.Close ?? d.c) || 0
+        })).filter(x => x.date && x.price);
+
         // Process predictions
         if (data.predictions && data.predictions.models) {
             this.predictions = {
@@ -85,29 +102,25 @@ class GoldForecastApp {
                 week: [],
                 confidence: 90
             };
-            
-            // Extract today's predictions (first day)
-            Object.entries(data.predictions.models).forEach(([model, preds]) => {
-                if (preds && preds.length > 0) {
-                    this.predictions.today[model] = preds[0];
+
+            // Extract today's predictions (first day) using normalized keys
+            Object.entries(data.predictions.models).forEach(([modelKey, preds]) => {
+                if (Array.isArray(preds) && preds.length > 0) {
+                    this.predictions.today[modelKey] = Number(preds[0]);
                 }
             });
-            
-            // Extract week predictions (ensemble model)
-            if (data.predictions.models.ensemble) {
-                data.predictions.dates.forEach((date, index) => {
-                    if (data.predictions.models.ensemble[index]) {
-                        this.predictions.week.push({
-                            date: date,
-                            price: data.predictions.models.ensemble[index]
-                        });
-                    }
-                });
-            }
-            
-            // Set confidence from ensemble model
+
+            // Extract week predictions (use ensemble if available)
+            const dates = data.predictions.dates || [];
+            const ensemble = data.predictions.models.ensemble || [];
+            this.predictions.week = dates.map((date, idx) => ({
+                date,
+                price: Number(ensemble[idx]) || null
+            })).filter(p => p.price !== null);
+
+            // Confidence
             if (data.confidence && data.confidence.ensemble) {
-                this.predictions.confidence = data.confidence.ensemble.avg_confidence || 90;
+                this.predictions.confidence = Number(data.confidence.ensemble.avg_confidence) || 90;
             }
         } else {
             // Fallback to generated predictions
@@ -250,19 +263,24 @@ class GoldForecastApp {
             weekTrendEl.className = `stat-value trend ${weekTrend.toLowerCase()}`;
         }
         
-        // Update model accuracies (simulated)
-        const accuracies = {
-            biGRU: 87.5 + Math.random() * 5,
-            tcn: 85.2 + Math.random() * 5,
-            transformer: 89.1 + Math.random() * 5,
-            ensemble: 91.8 + Math.random() * 3
+        // Update model accuracies (prefer real from data if available)
+        const defaultAcc = {
+            bi_gru: 87.5,
+            tcn: 85.2,
+            transformer: 89.1,
+            ensemble: 91.8
         };
-        
-        Object.entries(accuracies).forEach(([model, accuracy]) => {
-            const el = document.getElementById(`${model}Accuracy`);
-            if (el) {
-                el.textContent = `${accuracy.toFixed(1)}%`;
-            }
+        const sourceAcc = (this.modelPerformance || defaultAcc);
+
+        const map = [
+            ['bi_gru', 'biGruAccuracy'],
+            ['tcn', 'tcnAccuracy'],
+            ['transformer', 'transformerAccuracy'],
+            ['ensemble', 'ensembleAccuracy']
+        ];
+        map.forEach(([key, elId]) => {
+            const el = document.getElementById(elId);
+            if (el) el.textContent = `${(sourceAcc[key] ?? defaultAcc[key]).toFixed(1)}%`;
         });
     }
 
@@ -344,7 +362,8 @@ class GoldForecastApp {
                         ticks: {
                             color: '#B0BEC5',
                             callback: function(value) {
-                                return '$' + value.toFixed(0);
+                                const v = typeof value === 'number' ? value : Number(value);
+                                return '$' + (isNaN(v) ? value : v.toFixed(0));
                             }
                         },
                         grid: {
@@ -366,11 +385,13 @@ class GoldForecastApp {
         if (!ctx) return;
         
         const models = ['Bi-GRU', 'TCN', 'Transformer', 'Ensemble'];
+        // Support both bi_gru and biGRU style keys
+        const today = this.predictions.today || {};
         const predictions = [
-            this.predictions.today.biGRU,
-            this.predictions.today.tcn,
-            this.predictions.today.transformer,
-            this.predictions.today.ensemble
+            today.bi_gru ?? today.biGRU ?? null,
+            today.tcn ?? null,
+            today.transformer ?? null,
+            today.ensemble ?? null
         ];
         
         this.charts.comparison = new Chart(ctx, {
@@ -411,7 +432,8 @@ class GoldForecastApp {
                         borderWidth: 1,
                         callbacks: {
                             label: function(context) {
-                                return `Prediction: $${context.parsed.y.toFixed(2)}`;
+                                const val = context.parsed.y;
+                                return `Prediction: $${(typeof val === 'number' ? val : Number(val)).toFixed(2)}`;
                             }
                         }
                     }
@@ -461,8 +483,10 @@ class GoldForecastApp {
     updateChartPeriod(days) {
         if (!this.charts.price) return;
         
-        const historicalData = this.historicalData.slice(-days);
-        const futureData = this.predictions.week;
+        // Clamp days to available history
+        const clampedDays = Math.max(1, Math.min(days, this.historicalData.length));
+        const historicalData = this.historicalData.slice(-clampedDays);
+        const futureData = this.predictions.week || [];
         
         this.charts.price.data.labels = [
             ...historicalData.map(d => new Date(d.date).toLocaleDateString()),
