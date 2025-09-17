@@ -63,116 +63,17 @@ jobs:
             exit 1
           fi
           echo "✅ Forecast file created successfully"
-          python3 -c '
-import json
-data = json.load(open("docs/data/latest_forecast.json"))
-current = data.get("current_price", 0) or 0
-ensemble = (
-    data.get("predictions", {})
-    .get("models", {})
-    .get("ensemble") or [0]
-)
-trend = (
-    data.get("insights", {})
-    .get("trend", {})
-    .get("direction", "Unknown")
-)
-print(f"📊 Current Price: ${current:.2f}")
-if ensemble:
-    print(f"🔮 Tomorrow Prediction: ${float(ensemble[0]):.2f}")
-print(f"📈 Trend: {trend}")
-'
+          python scripts/ci/print_forecast_brief.py
 
       - name: 📱 Update Web App Data
         run: |
           echo "🌐 Preparing data for web application..."
-          cat > update_web_data.py <<'EOF'
-          import json
-          import sys
-          from datetime import datetime
-
-          try:
-              with open('docs/data/latest_forecast.json', 'r') as f:
-                  forecast = json.load(f)
-              with open('docs/data/market_data.json', 'r') as f:
-                  market = json.load(f)
-              web_data = {
-                  'timestamp': datetime.now().isoformat(),
-                  'current_price': forecast.get('current_price', 0),
-                  'predictions': forecast.get('predictions', {}),
-                  'confidence': forecast.get('confidence', {}),
-                  'insights': forecast.get('insights', {}),
-                  'model_performance': forecast.get(
-                      'model_performance', {}
-                  ),
-                  'historical_data': market.get('gold_price', {})
-                  .get('data', [])[-30:],
-                  'last_updated': datetime.now().strftime(
-                      '%Y-%m-%d %H:%M:%S UTC'
-                  ),
-                  'data_source': market.get('gold_price', {})
-                  .get('source', 'Unknown'),
-                  'next_update': 'Daily at 6:00 AM EST'
-              }
-              with open('docs/data/web_data.json', 'w') as f:
-                  json.dump(web_data, f, indent=2, default=str)
-              print('✅ Web application data updated successfully!')
-          except Exception as e:
-              print(f'❌ Error updating web data: {e}')
-              sys.exit(1)
-EOF
-          python3 update_web_data.py
+          python scripts/ci/update_web_data.py
 
       - name: 📈 Generate Performance Report
         run: |
           echo "📊 Generating performance report..."
-          cat > generate_report.py <<'EOF'
-          import json
-          import os
-          import sys
-          from datetime import datetime, timedelta
-
-          try:
-              with open('docs/data/latest_forecast.json', 'r') as f:
-                  fc = json.load(f)
-
-              log_entry = {
-                  'date': datetime.now().strftime('%Y-%m-%d'),
-                  'timestamp': datetime.now().isoformat(),
-                  'current_price': fc.get('current_price', 0),
-                  'predictions': {
-                      m: p[0] if p else 0 for m, p in
-                      fc.get('predictions', {}).get('models', {}).items()
-                  },
-                  'confidence': {
-                      m: c.get('avg_confidence', 0)
-                      for m, c in fc.get('confidence', {}).items()
-                  }
-              }
-              log_file = 'docs/data/performance_log.json'
-              perf_log = {'entries': []}
-              if os.path.exists(log_file):
-                  with open(log_file, 'r') as f:
-                      perf_log = json.load(f)
-              perf_log['entries'].append(log_entry)
-              cutoff = datetime.now() - timedelta(days=30)
-              perf_log['entries'] = [
-                  e for e in perf_log['entries'] if
-                  datetime.fromisoformat(
-                      e['timestamp'].replace('Z', '+00:00')
-                  ) > cutoff
-              ]
-              with open(log_file, 'w') as f:
-                  json.dump(perf_log, f, indent=2, default=str)
-              print(
-                  '✅ Performance log updated with '
-                  f'{len(perf_log["entries"])} entries'
-              )
-          except Exception as e:
-              print(f'❌ Error generating performance report: {e}')
-              sys.exit(1)
-EOF
-          python3 generate_report.py
+          python scripts/ci/generate_performance_report.py
 
       - name: 🎯 Commit and Push Results
         run: |
@@ -180,42 +81,7 @@ EOF
           git config --local user.email "action@github.com"
           git config --local user.name "Gold Forecast Bot"
           git add docs/data/
-          cat > generate_commit_msg.py <<'EOF'
-          import json
-          import sys
-          from datetime import datetime
-          try:
-              with open('docs/data/latest_forecast.json', 'r') as f:
-                  data = json.load(f)
-              current = data.get('current_price', 0) or 0
-              ensemble = (
-                  data.get('predictions', {})
-                  .get('models', {})
-                  .get('ensemble') or [0]
-              )
-              trend = (
-                  data.get('insights', {})
-                  .get('trend', {})
-                  .get('direction', 'Unknown')
-              )
-              print(
-                  '🤖 Daily forecast update ' +
-                  datetime.utcnow().strftime('%Y-%m-%d')
-              )
-              print()
-              print(f'📊 Current: ${current:.2f}')
-              if ensemble and ensemble[0] is not None:
-                  print(f'🔮 Tomorrow: ${float(ensemble[0]):.2f}')
-              print(f'📈 Trend: {trend}')
-              print()
-              print('Generated by automated ML pipeline')
-          except Exception as e:
-              print(
-                  '🤖 Daily forecast update '
-                  f'(error getting details: {e})'
-              )
-EOF
-          python3 generate_commit_msg.py > commit_msg.txt
+          python scripts/ci/generate_commit_msg.py > commit_msg.txt
           if git diff --staged --quiet; then
             echo "📝 No changes to commit"
           else
@@ -239,65 +105,9 @@ EOF
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ ! -f "docs/data/latest_forecast.json" ]; then
             echo "❌ Forecast data not available" >> $GITHUB_STEP_SUMMARY
-            exit 0
+          else
+            python scripts/ci/generate_summary.py >> $GITHUB_STEP_SUMMARY
           fi
-          cat > generate_summary.py <<'EOF'
-          import json
-          import sys
-          try:
-              with open('docs/data/latest_forecast.json', 'r') as f:
-                  data = json.load(f)
-              current = data.get('current_price', 0)
-              preds = data.get('predictions', {}).get('models', {})
-              insights = data.get('insights', {})
-              print('### 📊 Market Data')
-              if current is not None:
-                  print(f'- **Current Price**: ${current:.2f}')
-              print(
-                  f'- **Data Source**: '
-                  f'{data.get("metadata", {}).get("data_points", 0)} '
-                  'historical points'
-              )
-              print('')
-              print('### 🔮 Tomorrow Predictions')
-              if preds:
-                  for m, p in preds.items():
-                      if p and p[0] is not None:
-                          print(f'- **{m.upper()}**: ${p[0]:.2f}')
-              else:
-                  print('- No predictions available.')
-              print('')
-              print('### 📈 Market Insights')
-              trend = insights.get('trend', {})
-              print(
-                  f'- **Trend**: {trend.get("direction", "Unknown")} '
-                  f'({trend.get("change_percent", 0):.2f}%)'
-              )
-              print(
-                  '- **Volatility**: '
-                  f'{insights.get("volatility", {}).get("level", "Unknown")}'
-              )
-              print(
-                  f'- **Support**: $'
-                  f'{insights.get("key_levels", {}).get("support", 0):.2f}'
-              )
-              print(
-                  f'- **Resistance**: $'
-                  f'{insights.get("key_levels", {}).get("resistance", 0):.2f}'
-              )
-              print('')
-              print('### 🎯 Model Performance')
-              perf = data.get('model_performance', {})
-              if perf:
-                  for m, acc in perf.items():
-                      print(f'- **{m.upper()}**: {acc:.1f}% accuracy')
-              else:
-                  print('- No performance data available.')
-          except Exception as e:
-              print(f'❌ Error generating summary: {e}')
-              sys.exit(1)
-EOF
-          python3 generate_summary.py >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "🕐 **Generated**: $(date)" >> $GITHUB_STEP_SUMMARY
