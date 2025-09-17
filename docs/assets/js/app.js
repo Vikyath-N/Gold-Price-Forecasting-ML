@@ -95,6 +95,9 @@ class GoldForecastApp {
             price: Number(d.price ?? d.close ?? d.Close ?? d.c) || 0
         })).filter(x => x.date && x.price);
 
+        // Preserve model performance if available
+        this.modelPerformance = data.model_performance || this.modelPerformance;
+
         // Process predictions
         if (data.predictions && data.predictions.models) {
             this.predictions = {
@@ -121,6 +124,13 @@ class GoldForecastApp {
             // Confidence
             if (data.confidence && data.confidence.ensemble) {
                 this.predictions.confidence = Number(data.confidence.ensemble.avg_confidence) || 90;
+            }
+
+            // Historical prediction vs actual for backtesting
+            if (Array.isArray(data.prediction_vs_actual)) {
+                this.predictionVsActual = data.prediction_vs_actual
+                    .map(r => ({ date: r.date, predicted: Number(r.predicted), actual: r.actual != null ? Number(r.actual) : null }))
+                    .filter(r => r.date && !Number.isNaN(r.predicted));
             }
         } else {
             // Fallback to generated predictions
@@ -282,6 +292,13 @@ class GoldForecastApp {
             const el = document.getElementById(elId);
             if (el) el.textContent = `${(sourceAcc[key] ?? defaultAcc[key]).toFixed(1)}%`;
         });
+
+        // Show evaluation (MAE/MAPE) and today's actual vs predicted if available
+        const evalBox = document.getElementById('evaluationBox');
+        if (evalBox && this.evaluation) {
+            const e = this.evaluation;
+            evalBox.innerHTML = `Today Actual: $${(e.today_actual ?? this.currentPrice).toFixed(2)} · Yesterday Pred: $${(e.yesterday_pred ?? this.predictions?.today?.ensemble ?? 0).toFixed(2)} · MAE: $${(e.mae ?? 0).toFixed(2)} · MAPE: ${(e.mape ?? 0).toFixed(2)}%`;
+        }
     }
 
     async initializeCharts() {
@@ -300,6 +317,11 @@ class GoldForecastApp {
         
         const last30Days = this.historicalData.slice(-30);
         const futureData = this.predictions.week;
+
+        // Map of historical predicted values for overlay (if available)
+        const predictedPastMap = new Map();
+        (this.predictionVsActual || []).forEach(r => predictedPastMap.set(r.date, r.predicted));
+        const predictedPastSeries = last30Days.map(d => predictedPastMap.has(d.date) ? predictedPastMap.get(d.date) : null);
         
         this.charts.price = new Chart(ctx, {
             type: 'line',
@@ -316,6 +338,16 @@ class GoldForecastApp {
                         backgroundColor: 'rgba(255, 215, 0, 0.1)',
                         borderWidth: 2,
                         fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Predicted (History)',
+                        data: [...predictedPastSeries, ...Array(futureData.length).fill(null)],
+                        borderColor: 'rgba(76, 175, 80, 0.6)',
+                        backgroundColor: 'rgba(76, 175, 80, 0.0)',
+                        borderWidth: 2,
+                        borderDash: [3, 3],
+                        fill: false,
                         tension: 0.4
                     },
                     {

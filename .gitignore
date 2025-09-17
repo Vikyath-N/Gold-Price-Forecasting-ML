@@ -1,3 +1,13 @@
+# Local test scripts and notebooks
+local_tests/
+*.local.py
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS artifacts
+.DS_Store
 # Python
 __pycache__/
 *.py[cod]

@@ -322,6 +322,30 @@ class GoldPredictor:
         for model, preds in predictions.items():
             forecast_data['predictions']['models'][model] = [round(p, 2) for p in preds]
         
+        # Compute daily evaluation (yesterday's prediction vs today's actual)
+        evaluation = {}
+        try:
+            prev_path = os.path.join(self.data_dir, 'latest_forecast.json')
+            if os.path.exists(prev_path):
+                with open(prev_path, 'r') as f:
+                    prev = json.load(f)
+                prev_dates = prev.get('predictions', {}).get('dates', [])
+                prev_ens = prev.get('predictions', {}).get('models', {}).get('ensemble', [])
+                eval_date = today.strftime('%Y-%m-%d')
+                if prev_dates and prev_dates[0] == eval_date and prev_ens:
+                    y_pred = float(prev_ens[0])
+                    mae = abs(current_price - y_pred)
+                    mape = (mae / max(current_price, 1e-6)) * 100.0
+                    evaluation = {
+                        'date': eval_date,
+                        'yesterday_pred': round(y_pred, 2),
+                        'today_actual': round(float(current_price), 2),
+                        'mae': round(float(mae), 4),
+                        'mape': round(float(mape), 4)
+                    }
+        except Exception:
+            evaluation = {}
+
         # For backtesting: stitch predicted-vs-actual for last N days when possible
         prediction_vs_actual = []
         try:
@@ -342,6 +366,8 @@ class GoldPredictor:
             prediction_vs_actual = []
 
         # Save forecast data
+        if evaluation:
+            forecast_data['evaluation'] = evaluation
         self.save_predictions(forecast_data)
         
         # Create summary for quick access
@@ -373,6 +399,7 @@ class GoldPredictor:
             'model_performance': self.model_accuracies,
             'historical_data': historical_data[-30:],
             'prediction_vs_actual': prediction_vs_actual,
+            'evaluation': evaluation,
             'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
         }
         self.save_predictions(web_data, 'web_data.json')
