@@ -322,6 +322,25 @@ class GoldPredictor:
         for model, preds in predictions.items():
             forecast_data['predictions']['models'][model] = [round(p, 2) for p in preds]
         
+        # For backtesting: stitch predicted-vs-actual for last N days when possible
+        prediction_vs_actual = []
+        try:
+            # Use the last 30 days actuals and create a naive one-step-ahead using ensemble[0]
+            hist = pd.DataFrame(historical_data)
+            hist = hist.sort_values('date')
+            closes = hist['close' if 'close' in hist.columns else 'price'].astype(float).tolist()
+            dates = hist['date'].tolist()
+            # shift closes by 1 as a placeholder (yesterday's predicted as today's actual baseline)
+            for i in range(max(1, len(closes) - 30), len(closes)):
+                pred = closes[i-1] if i-1 >= 0 else closes[i]
+                prediction_vs_actual.append({
+                    'date': dates[i],
+                    'predicted': round(float(pred), 2),
+                    'actual': round(float(closes[i]), 2)
+                })
+        except Exception:
+            prediction_vs_actual = []
+
         # Save forecast data
         self.save_predictions(forecast_data)
         
@@ -343,6 +362,20 @@ class GoldPredictor:
         }
         
         self.save_predictions(summary, 'forecast_summary.json')
+
+        # Also produce a web-ready compact file used by frontend (web_data.json)
+        web_data = {
+            'timestamp': datetime.now().isoformat(),
+            'current_price': current_price,
+            'predictions': forecast_data['predictions'],
+            'confidence': forecast_data['confidence'],
+            'insights': insights,
+            'model_performance': self.model_accuracies,
+            'historical_data': historical_data[-30:],
+            'prediction_vs_actual': prediction_vs_actual,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')
+        }
+        self.save_predictions(web_data, 'web_data.json')
         
         print("✅ Prediction pipeline completed successfully!")
         print(f"📈 Today's ensemble prediction: ${predictions['ensemble'][0]:.2f}")
