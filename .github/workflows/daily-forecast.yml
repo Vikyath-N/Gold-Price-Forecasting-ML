@@ -73,7 +73,7 @@ jobs:
           echo "🌐 Preparing data for web application..."
 
           # Create or update the web app data file
-          cat > update_web_data.py <<EOF
+          cat > update_web_data.py <<'EOF'
           import json
           import sys
           from datetime import datetime
@@ -115,7 +115,7 @@ jobs:
       - name: 📈 Generate Performance Report
         run: |
           echo "📊 Generating performance report..."
-          cat > generate_report.py <<EOF
+          cat > generate_report.py <<'EOF'
           import json
           import os
           from datetime import datetime, timedelta
@@ -181,7 +181,7 @@ jobs:
           git add docs/data/
 
           # Create summary for commit message
-          cat > generate_commit_msg.py <<EOF
+          cat > generate_commit_msg.py <<'EOF'
           import json
           from datetime import datetime
           try:
@@ -224,7 +224,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "docs/data/latest_forecast.json" ]; then
-            cat > generate_summary.py <<EOF
+            cat > generate_summary.py <<'EOF'
             import json
             import sys
 
