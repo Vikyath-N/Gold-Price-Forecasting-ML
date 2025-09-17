@@ -42,6 +42,7 @@ jobs:
         ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
       run: |
         echo "🔍 Fetching latest gold price data..."
+        mkdir -p docs/data
         python scripts/data_fetcher.py
         
         echo "📈 Market data fetch completed!"
