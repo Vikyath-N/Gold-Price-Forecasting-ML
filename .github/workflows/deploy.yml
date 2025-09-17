@@ -59,46 +59,40 @@ jobs:
           echo "⚡ Optimizing web assets..."
           
           # Create robots.txt
-          cat > docs/robots.txt << EOF
-User-agent: *
-Allow: /
-
-Sitemap: https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/sitemap.xml
-EOF
-
+          echo "User-agent: *" > docs/robots.txt
+          echo "Allow: /" >> docs/robots.txt
+          echo "" >> docs/robots.txt
+          echo "Sitemap: https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/sitemap.xml" >> docs/robots.txt
+          
           # Create sitemap.xml
-          cat > docs/sitemap.xml << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://$(echo $GITHUB_REPOSITORY | cut -d'/' -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d'/' -f2)/</loc>
-    <lastmod>$(date +%Y-%m-%d)</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>
-EOF
-
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > docs/sitemap.xml
+          echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' >> docs/sitemap.xml
+          echo '  <url>' >> docs/sitemap.xml
+          echo '    <loc>https://$(echo $GITHUB_REPOSITORY | cut -d"/" -f1).github.io/$(echo $GITHUB_REPOSITORY | cut -d"/" -f2)/</loc>' >> docs/sitemap.xml
+          echo '    <lastmod>$(date +%Y-%m-%d)</lastmod>' >> docs/sitemap.xml
+          echo '    <changefreq>daily</changefreq>' >> docs/sitemap.xml
+          echo '    <priority>1.0</priority>' >> docs/sitemap.xml
+          echo '  </url>' >> docs/sitemap.xml
+          echo '</urlset>' >> docs/sitemap.xml
+          
           # Create manifest.json for PWA
-          cat > docs/manifest.json << EOF
-{
-  "name": "Gold Price Forecasting AI",
-  "short_name": "Gold AI",
-  "description": "Real-time ML-powered gold price predictions",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#0F1419",
-  "theme_color": "#FFD700",
-  "icons": [
-    {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23FFD700'/><text x='50' y='60' text-anchor='middle' font-size='30' fill='%23000'>🥇</text></svg>",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    }
-  ]
-}
-EOF
-
+          echo '{' > docs/manifest.json
+          echo '  "name": "Gold Price Forecasting AI",' >> docs/manifest.json
+          echo '  "short_name": "Gold AI",' >> docs/manifest.json
+          echo '  "description": "Real-time ML-powered gold price predictions",' >> docs/manifest.json
+          echo '  "start_url": "/",' >> docs/manifest.json
+          echo '  "display": "standalone",' >> docs/manifest.json
+          echo '  "background_color": "#0F1419",' >> docs/manifest.json
+          echo '  "theme_color": "#FFD700",' >> docs/manifest.json
+          echo '  "icons": [' >> docs/manifest.json
+          echo '    {' >> docs/manifest.json
+          echo '      "src": "data:image/svg+xml,<svg xmlns=\u0027http://www.w3.org/2000/svg\u0027 viewBox=\u00270 0 100 100\u0027><circle cx=\u002750\u0027 cy=\u002750\u0027 r=\u002740\u0027 fill=\u0027%23FFD700\u0027/><text x=\u002750\u0027 y=\u002760\u0027 text-anchor=\u0027middle\u0027 font-size=\u002730\u0027 fill=\u0027%23000\u0027>🥇</text></svg>",' >> docs/manifest.json
+          echo '      "sizes": "192x192",' >> docs/manifest.json
+          echo '      "type": "image/svg+xml"' >> docs/manifest.json
+          echo '    }' >> docs/manifest.json
+          echo '  ]' >> docs/manifest.json
+          echo '}' >> docs/manifest.json
+          
           echo "✅ Asset optimization completed!"
 
       - name: 📊 Validate Data Files
