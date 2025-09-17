@@ -32,12 +32,12 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: 📦 Create Sample Data (if missing)
+      - name: 📦 Create Required Directories
         run: |
-          echo "🔍 Checking for required data files..."
-          
-          # Create data directory if it doesn't exist
+          echo "🔍 Creating required directories..."
           mkdir -p docs/data
+          mkdir -p docs/assets/css
+          mkdir -p docs/assets/js
           
           # Create sample data files if they don't exist
           if [ ! -f "docs/data/web_data.json" ]; then
