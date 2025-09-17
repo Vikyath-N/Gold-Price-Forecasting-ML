@@ -35,7 +35,7 @@ jobs:
     - name: 📦 Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r requirements-ci.txt  # Minimal requirements for CI
 
     - name: 📊 Fetch Latest Market Data
       env:
