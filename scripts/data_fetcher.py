@@ -37,8 +37,11 @@ class GoldDataFetcher:
                 'range': period,
                 'events': 'history'
             }
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            }
             
-            response = requests.get(url, params=params, timeout=30)
+            response = requests.get(url, params=params, headers=headers, timeout=30)
             response.raise_for_status()
             
             data = response.json()
@@ -82,7 +85,7 @@ class GoldDataFetcher:
                 'function': 'TIME_SERIES_DAILY',
                 'symbol': f'{symbol}',
                 'apikey': self.alpha_key,
-                'outputsize': 'full'
+                'outputsize': 'compact'  # Last 100 data points (free tier friendly)
             }
             
             response = requests.get(self.base_url_alpha, params=params, timeout=30)
@@ -90,24 +93,27 @@ class GoldDataFetcher:
             
             data = response.json()
             
-            if 'Error Message' in data:
-                return {'success': False, 'error': data['Error Message']}
+            if 'Error Message' in data or 'Note' in data:
+                print(f"⚠️ Alpha Vantage warning: {data.get('Error Message') or data.get('Note')}")
+                return {'success': False, 'error': str(data)}
             
-            if 'Note' in data:
-                return {'success': False, 'error': 'API call frequency limit reached'}
+            time_series = data.get('Time Series (Daily)')
+            if not time_series:
+                return {'success': False, 'error': 'No time series data'}
             
-            time_series = data.get('Time Series (Daily)', {})
-            
-            df_data = []
-            for date_str, values in time_series.items():
-                df_data.append({
-                    'date': date_str,
-                    'open': float(values['1. open']),
-                    'high': float(values['2. high']),
-                    'low': float(values['3. low']),
-                    'close': float(values['4. close']),
-                    'volume': int(values['5. volume'])
-                })
+            try:
+                df_data = []
+                for date_str, values in time_series.items():
+                    df_data.append({
+                        'date': date_str,
+                        'open': float(values['1. open']),
+                        'high': float(values['2. high']),
+                        'low': float(values['3. low']),
+                        'close': float(values['4. close']),
+                        'volume': int(values['5. volume'])
+                    })
+            except (KeyError, ValueError) as e:
+                return {'success': False, 'error': f'Data format error: {e}'}
             
             df = pd.DataFrame(df_data)
             df = df.sort_values('date')
@@ -199,16 +205,32 @@ class GoldDataFetcher:
         """Main data collection pipeline"""
         print("🚀 Starting gold price data collection...")
         
-        # Fetch gold price data (try Yahoo first, fallback to Alpha Vantage)
-        gold_data = self.fetch_yahoo_gold_price("GC=F", "1y")
+        # Try multiple data sources in order
+        sources = [
+            ('Yahoo Finance (GC=F)', lambda: self.fetch_yahoo_gold_price("GC=F", "1y")),
+            ('Yahoo Finance (GLD)', lambda: self.fetch_yahoo_gold_price("GLD", "1y")),
+            ('Alpha Vantage (GOLD)', lambda: self.fetch_alpha_vantage_data("GOLD")),
+            ('Alpha Vantage (GLD)', lambda: self.fetch_alpha_vantage_data("GLD"))
+        ]
         
-        if not gold_data['success']:
-            print("Yahoo Finance failed, trying Alpha Vantage...")
-            gold_data = self.fetch_alpha_vantage_data("GOLD")
+        gold_data = None
+        for source_name, fetch_fn in sources:
+            print(f"\n🔍 Trying {source_name}...")
+            data = fetch_fn()
+            if data['success']:
+                print(f"✅ Successfully fetched data from {source_name}")
+                gold_data = data
+                break
+            else:
+                print(f"⚠️ {source_name} failed: {data['error']}")
         
-        if not gold_data['success']:
-            print("❌ Failed to fetch gold price data")
-            return False
+        if not gold_data:
+            print("\n❌ All data sources failed")
+            if not os.path.exists(os.path.join(self.data_dir, 'market_data.json')):
+                print("❌ No fallback data available")
+                return False
+            print("⚠️ Using previous market data as fallback")
+            return True
         
         print(f"✅ Fetched gold data from {gold_data['source']}")
         print(f"📊 Current gold price: ${gold_data['current_price']:.2f}")
