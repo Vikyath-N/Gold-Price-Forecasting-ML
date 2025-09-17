@@ -5,3 +5,4 @@ requests>=2.25.0
 python-dateutil>=2.8.0
 pytz>=2021.1
 joblib>=1.1.0  # For model_predictor.py
+scikit-learn>=1.0.0  # For MinMaxScaler
