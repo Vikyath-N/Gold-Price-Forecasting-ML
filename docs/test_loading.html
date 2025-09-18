@@ -31,6 +31,15 @@
     <h1>🧪 Gold Price App Loading Test</h1>
     <div id="testLog" class="test-log"></div>
 
+    <!-- Required DOM Elements (Hidden) -->
+    <div style="display: none;">
+        <div id="loadingOverlay"></div>
+        <canvas id="priceChart"></canvas>
+        <canvas id="comparisonChart"></canvas>
+        <span id="lastUpdate"></span>
+        <span id="currentPrice"></span>
+    </div>
+
     <script>
         class LoadingTest {
             constructor() {
@@ -143,6 +152,36 @@
                 return allFound;
             }
 
+            async testAppInitialization() {
+                this.logMessage('info', 'Testing app initialization...');
+                try {
+                    // Load app.js
+                    const script = document.createElement('script');
+                    script.src = './assets/js/app.js';
+                    script.onload = () => {
+                        this.logMessage('success', '✅ app.js loaded');
+                        // Test app initialization
+                        if (typeof GoldForecastApp === 'undefined') {
+                            this.logMessage('error', '❌ GoldForecastApp class not found');
+                        } else {
+                            this.logMessage('success', '✅ GoldForecastApp class available');
+                            try {
+                                window.testApp = new GoldForecastApp();
+                                this.logMessage('success', '✅ App instance created');
+                            } catch (e) {
+                                this.logMessage('error', `❌ App initialization failed: ${e.message}`);
+                            }
+                        }
+                    };
+                    script.onerror = () => {
+                        this.logMessage('error', '❌ Failed to load app.js');
+                    };
+                    document.body.appendChild(script);
+                } catch (error) {
+                    this.logMessage('error', `❌ App initialization error: ${error.message}`);
+                }
+            }
+
             async runTests() {
                 this.logMessage('info', '🚀 Starting tests...');
 
@@ -172,6 +211,9 @@
 
                 // Test DOM
                 await this.testDOMElements();
+
+                // Test app initialization
+                await this.testAppInitialization();
 
                 this.logMessage('info', '🏁 Tests completed');
             }
