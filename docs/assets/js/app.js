@@ -31,6 +31,8 @@ class GoldForecastApp {
         } catch (error) {
             console.error('❌ Error initializing app:', error);
             this.showError('Failed to initialize application');
+            // Ensure loading overlay is hidden even on error
+            this.hideLoading();
         }
     }
 
@@ -237,11 +239,8 @@ class GoldForecastApp {
             const predicted = predictions[i];
             
             if (actual !== null && predicted !== null) {
-                // Create area between actual and predicted values
-                areaData.push({
-                    y: Math.min(actual, predicted),
-                    y1: Math.max(actual, predicted)
-                });
+                // Use the predicted value as the area data (will be filled to actual)
+                areaData.push(predicted);
             } else {
                 areaData.push(null);
             }
@@ -445,16 +444,26 @@ class GoldForecastApp {
     async initializeCharts() {
         console.log('📊 Initializing charts...');
         
-        // Initialize main price chart
-        this.initPriceChart();
-        
-        // Initialize comparison chart
-        this.initComparisonChart();
+        try {
+            // Initialize main price chart
+            this.initPriceChart();
+            
+            // Initialize comparison chart
+            this.initComparisonChart();
+        } catch (error) {
+            console.error('❌ Error initializing charts:', error);
+            throw error;
+        }
     }
 
     initPriceChart() {
         const ctx = document.getElementById('priceChart');
-        if (!ctx) return;
+        if (!ctx) {
+            console.warn('⚠️ Price chart canvas not found');
+            return;
+        }
+        
+        try {
         
         // Start with 7D view (default active button)
         const defaultDays = 7;
@@ -526,12 +535,13 @@ class GoldForecastApp {
                     {
                         label: 'Prediction Accuracy Area',
                         data: this.createAccuracyAreaData(backtestingActuals, backtestingPredictions),
-                        borderColor: 'transparent',
+                        borderColor: 'rgba(255, 99, 132, 0.6)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: '+1',
+                        fill: 'origin',
                         tension: 0.4,
                         pointRadius: 0,
-                        order: 0
+                        order: 0,
+                        type: 'line'
                     },
                     {
                         label: 'Predicted Price (Future)',
@@ -596,11 +606,20 @@ class GoldForecastApp {
                 }
             }
         });
+        } catch (error) {
+            console.error('❌ Error initializing price chart:', error);
+            throw error;
+        }
     }
 
     initComparisonChart() {
         const ctx = document.getElementById('comparisonChart');
-        if (!ctx) return;
+        if (!ctx) {
+            console.warn('⚠️ Comparison chart canvas not found');
+            return;
+        }
+        
+        try {
         
         const models = ['Bi-GRU', 'TCN', 'Transformer', 'Ensemble'];
         // Support both bi_gru and biGRU style keys - ensure all models have values
@@ -690,6 +709,10 @@ class GoldForecastApp {
                 }
             }
         });
+        } catch (error) {
+            console.error('❌ Error initializing comparison chart:', error);
+            throw error;
+        }
     }
 
     setupEventListeners() {
