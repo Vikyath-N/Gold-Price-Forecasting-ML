@@ -94,6 +94,9 @@ class GoldForecastApp {
             date: d.date,
             price: Number(d.price ?? d.close ?? d.Close ?? d.c) || 0
         })).filter(x => x.date && x.price);
+        
+        // Debug: Log the last few historical data points
+        console.log('📊 Last 3 historical data points:', this.historicalData.slice(-3));
 
         // Preserve model performance if available
         this.modelPerformance = data.model_performance || this.modelPerformance;
@@ -327,9 +330,20 @@ class GoldForecastApp {
         
         // Create continuous datasets that connect properly
         const allLabels = [
-            ...historicalData.map(d => new Date(d.date).toLocaleDateString()),
-            ...futureData.map(d => new Date(d.date).toLocaleDateString())
+            ...historicalData.map(d => {
+                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                return date.toLocaleDateString();
+            }),
+            ...futureData.map(d => {
+                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                return date.toLocaleDateString();
+            })
         ];
+        
+        // Debug: Log chart data for troubleshooting
+        console.log('📊 Chart labels (last 5):', allLabels.slice(-5));
+        console.log('📊 Historical data (last 3):', historicalData.slice(-3));
+        console.log('📊 Future data (first 3):', futureData.slice(0, 3));
         
         const historicalPrices = [...historicalData.map(d => d.price), ...Array(futureData.length).fill(null)];
         const predictedHistory = [...predictedPastSeries, ...Array(futureData.length).fill(null)];
@@ -554,8 +568,14 @@ class GoldForecastApp {
         
         // Create continuous data for proper overlay
         const allLabels = [
-            ...historicalData.map(d => new Date(d.date).toLocaleDateString()),
-            ...futureData.map(d => new Date(d.date).toLocaleDateString())
+            ...historicalData.map(d => {
+                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                return date.toLocaleDateString();
+            }),
+            ...futureData.map(d => {
+                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                return date.toLocaleDateString();
+            })
         ];
         
         // Map of historical predicted values for overlay (if available)
