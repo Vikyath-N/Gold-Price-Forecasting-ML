@@ -245,6 +245,41 @@ body {
     font-weight: 700;
 }
 
+/* Backtesting Metrics */
+.backtesting-metrics {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 8px;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.metric-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    display: block;
+    color: var(--primary-gold);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
 /* Charts Section */
 .charts-section {
     margin: 40px 0;
