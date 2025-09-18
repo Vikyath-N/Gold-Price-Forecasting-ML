@@ -286,17 +286,24 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 0.9rem;
+    font-weight: 500;
+    user-select: none;
 }
 
 .chart-btn:hover {
     background: var(--border-color);
     color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
 }
 
 .chart-btn.active {
     background: var(--primary-gold);
     color: var(--bg-primary);
     border-color: var(--primary-gold);
+    font-weight: 600;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
 }
 
 .chart-wrapper {
