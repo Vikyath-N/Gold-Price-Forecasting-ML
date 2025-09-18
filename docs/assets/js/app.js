@@ -433,22 +433,28 @@ class GoldForecastApp {
             const mape = 0.75;
             const accuracy = 99.25;
             
-            document.getElementById('backtestMAE')?.textContent = `$${mae.toFixed(1)}`;
-            document.getElementById('backtestMAPE')?.textContent = `${mape.toFixed(2)}%`;
-            document.getElementById('backtestAccuracy')?.textContent = `${accuracy.toFixed(1)}%`;
+            const maeEl0 = document.getElementById('backtestMAE');
+            if (maeEl0) maeEl0.textContent = `$${mae.toFixed(1)}`;
+            const mapeEl0 = document.getElementById('backtestMAPE');
+            if (mapeEl0) mapeEl0.textContent = `${mape.toFixed(2)}%`;
+            const accEl0 = document.getElementById('backtestAccuracy');
+            if (accEl0) accEl0.textContent = `${accuracy.toFixed(1)}%`;
             return;
         }
         
         // Calculate metrics from backtesting data
         const lastData = this.backtestingData[this.backtestingData.length - 1];
         if (lastData) {
-            document.getElementById('backtestMAE')?.textContent = `$${lastData.mae.toFixed(1)}`;
-            document.getElementById('backtestMAPE')?.textContent = `${lastData.mape.toFixed(2)}%`;
+            const maeEl = document.getElementById('backtestMAE');
+            if (maeEl) maeEl.textContent = `$${lastData.mae.toFixed(1)}`;
+            const mapeEl = document.getElementById('backtestMAPE');
+            if (mapeEl) mapeEl.textContent = `${lastData.mape.toFixed(2)}%`;
             
             // Calculate overall accuracy (100 - average MAPE)
             const avgMape = this.backtestingData.reduce((sum, d) => sum + d.errorPercent, 0) / this.backtestingData.length;
             const accuracy = Math.max(0, 100 - avgMape);
-            document.getElementById('backtestAccuracy')?.textContent = `${accuracy.toFixed(1)}%`;
+            const accEl = document.getElementById('backtestAccuracy');
+            if (accEl) accEl.textContent = `${accuracy.toFixed(1)}%`;
         }
     }
 
