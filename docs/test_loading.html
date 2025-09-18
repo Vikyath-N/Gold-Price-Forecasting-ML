@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Gold Price App Loading Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0F1419;
+            color: #FFFFFF;
+            padding: 20px;
+            margin: 0;
+        }
+        .test-log {
+            background: #1A1F2E;
+            border: 1px solid #37474F;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #F44336; }
+        .warning { color: #FFD700; }
+        .info { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Gold Price App Loading Test</h1>
+    <div id="testLog" class="test-log"></div>
+
+    <script>
+        class LoadingTest {
+            constructor() {
+                this.log = document.getElementById('testLog');
+                this.testResults = [];
+                this.runTests();
+            }
+
+            logMessage(type, message) {
+                const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
+                const line = `[${timestamp}] ${message}`;
+                this.testResults.push({ type, message: line });
+                this.log.innerHTML = this.testResults
+                    .map(r => `<span class="${r.type}">${r.message}</span>`)
+                    .join('\n');
+            }
+
+            async testDataFile(url) {
+                try {
+                    this.logMessage('info', `Testing ${url}...`);
+                    const res = await fetch(url, { cache: 'no-store' });
+                    
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    
+                    const data = await res.json();
+                    
+                    // Validate data structure
+                    const checks = [
+                        ['timestamp', data.timestamp, 'string'],
+                        ['current_price', data.current_price, 'number'],
+                        ['predictions', data.predictions, 'object'],
+                        ['predictions.dates', data.predictions?.dates, 'object'],
+                        ['predictions.models', data.predictions?.models, 'object']
+                    ];
+                    
+                    checks.forEach(([field, value, type]) => {
+                        if (!value) {
+                            this.logMessage('error', `❌ Missing ${field}`);
+                        } else if (typeof value !== type) {
+                            this.logMessage('error', `❌ Invalid ${field} type: ${typeof value}, expected ${type}`);
+                        } else {
+                            this.logMessage('success', `✅ Valid ${field}`);
+                        }
+                    });
+                    
+                    return true;
+                } catch (error) {
+                    this.logMessage('error', `❌ Error testing ${url}: ${error.message}`);
+                    return false;
+                }
+            }
+
+            async testChartInitialization() {
+                try {
+                    this.logMessage('info', 'Testing Chart.js initialization...');
+                    if (typeof Chart === 'undefined') {
+                        this.logMessage('error', '❌ Chart.js not loaded');
+                        return false;
+                    }
+                    this.logMessage('success', '✅ Chart.js available');
+
+                    // Test canvas creation
+                    const canvas = document.createElement('canvas');
+                    try {
+                        new Chart(canvas, {
+                            type: 'line',
+                            data: {
+                                labels: ['Test'],
+                                datasets: [{
+                                    label: 'Test',
+                                    data: [1],
+                                    borderColor: '#000'
+                                }]
+                            }
+                        });
+                        this.logMessage('success', '✅ Chart initialization works');
+                        return true;
+                    } catch (e) {
+                        this.logMessage('error', `❌ Chart initialization failed: ${e.message}`);
+                        return false;
+                    }
+                } catch (error) {
+                    this.logMessage('error', `❌ Chart test error: ${error.message}`);
+                    return false;
+                }
+            }
+
+            async testDOMElements() {
+                this.logMessage('info', 'Testing required DOM elements...');
+                const required = [
+                    'loadingOverlay',
+                    'priceChart',
+                    'comparisonChart',
+                    'lastUpdate',
+                    'currentPrice'
+                ];
+
+                let allFound = true;
+                required.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) {
+                        this.logMessage('error', `❌ Missing #${id}`);
+                        allFound = false;
+                    } else {
+                        this.logMessage('success', `✅ Found #${id}`);
+                    }
+                });
+                return allFound;
+            }
+
+            async runTests() {
+                this.logMessage('info', '🚀 Starting tests...');
+
+                // Test data files
+                const dataFiles = [
+                    './data/web_data.json',
+                    './data/latest_forecast.json',
+                    './data/sample_data.json'
+                ];
+
+                let dataAvailable = false;
+                for (const file of dataFiles) {
+                    if (await this.testDataFile(file)) {
+                        dataAvailable = true;
+                        break;
+                    }
+                }
+
+                if (!dataAvailable) {
+                    this.logMessage('error', '❌ No data files accessible');
+                } else {
+                    this.logMessage('success', '✅ Data files accessible');
+                }
+
+                // Test Chart.js
+                await this.testChartInitialization();
+
+                // Test DOM
+                await this.testDOMElements();
+
+                this.logMessage('info', '🏁 Tests completed');
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', () => new LoadingTest());
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
