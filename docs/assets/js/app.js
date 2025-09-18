@@ -902,10 +902,19 @@ class GoldForecastApp {
     }
 }
 
-// Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Expose class globally for tests and dynamic environments
+window.GoldForecastApp = GoldForecastApp;
+
+// Initialize app once DOM is ready (supports late script load on test page)
+const initGoldApp = () => {
+    if (window.goldApp) return; // avoid double init
     window.goldApp = new GoldForecastApp();
-});
+};
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGoldApp, { once: true });
+} else {
+    initGoldApp();
+}
 
 // Add error notification styles
 const errorStyles = `
