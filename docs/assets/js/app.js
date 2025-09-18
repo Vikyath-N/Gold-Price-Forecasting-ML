@@ -1,14 +1,25 @@
 // Gold Price Forecasting AI Web Application
 class GoldForecastApp {
     constructor() {
+        // Initialize state
         this.currentPrice = 0;
-        this.predictions = {};
+        this.predictions = {
+            today: {},
+            week: [],
+            confidence: 90
+        };
         this.historicalData = [];
         this.models = {};
         this.charts = {};
         this.isLoading = true;
+        this.backtestingData = [];
         
-        this.init();
+        // Start initialization
+        this.init().catch(error => {
+            console.error('❌ Failed to initialize app:', error);
+            this.showError('Failed to initialize application');
+            this.hideLoading();
+        });
     }
 
     async init() {
@@ -457,155 +468,159 @@ class GoldForecastApp {
     }
 
     initPriceChart() {
-        const ctx = document.getElementById('priceChart');
-        if (!ctx) {
-            console.warn('⚠️ Price chart canvas not found');
-            return;
-        }
-        
         try {
-        
-        // Start with 7D view (default active button)
-        const defaultDays = 7;
-        const historicalData = this.historicalData.slice(-defaultDays);
-        const futureData = this.predictions.week || [];
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) {
+                console.warn('⚠️ Price chart canvas not found');
+                return;
+            }
+            
+            // Start with 7D view (default active button)
+            const defaultDays = 7;
+            const historicalData = this.historicalData.slice(-defaultDays);
+            const futureData = this.predictions.week || [];
 
-        // Map of historical predicted values for overlay (if available)
-        const predictedPastMap = new Map();
-        (this.predictionVsActual || []).forEach(r => predictedPastMap.set(r.date, r.predicted));
-        const predictedPastSeries = historicalData.map(d => predictedPastMap.has(d.date) ? predictedPastMap.get(d.date) : null);
+            if (!Array.isArray(historicalData) || historicalData.length === 0) {
+                console.warn('⚠️ No historical data available');
+                return;
+            }
+
+            // Map of historical predicted values for overlay (if available)
+            const predictedPastMap = new Map();
+            (this.predictionVsActual || []).forEach(r => predictedPastMap.set(r.date, r.predicted));
+            const predictedPastSeries = historicalData.map(d => predictedPastMap.has(d.date) ? predictedPastMap.get(d.date) : null);
+            
+            // Create continuous datasets that connect properly
+            const allLabels = [
+                ...historicalData.map(d => {
+                    const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                    return date.toLocaleDateString();
+                }),
+                ...futureData.map(d => {
+                    const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
+                    return date.toLocaleDateString();
+                })
+            ];
         
-        // Create continuous datasets that connect properly
-        const allLabels = [
-            ...historicalData.map(d => {
-                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
-                return date.toLocaleDateString();
-            }),
-            ...futureData.map(d => {
-                const date = new Date(d.date + 'T00:00:00'); // Ensure consistent date parsing
-                return date.toLocaleDateString();
-            })
-        ];
+            // Debug: Log chart data for troubleshooting
+            console.log('📊 Chart labels (last 5):', allLabels.slice(-5));
+            console.log('📊 Historical data (last 3):', historicalData.slice(-3));
+            console.log('📊 Future data (first 3):', futureData.slice(0, 3));
+            
+            const historicalPrices = [...historicalData.map(d => d.price), ...Array(futureData.length).fill(null)];
+            const predictedHistory = [...predictedPastSeries, ...Array(futureData.length).fill(null)];
+            const futurePredictions = [...Array(historicalData.length - 1).fill(null), 
+                                      historicalData.length > 0 ? historicalData[historicalData.length - 1].price : null,
+                                      ...futureData.map(d => d.price)];
+            
+            // Create backtesting data for ensemble model performance visualization
+            const backtestingActuals = this.createBacktestingDataset(historicalData, 'actual');
+            const backtestingPredictions = this.createBacktestingDataset(historicalData, 'predicted');
         
-        // Debug: Log chart data for troubleshooting
-        console.log('📊 Chart labels (last 5):', allLabels.slice(-5));
-        console.log('📊 Historical data (last 3):', historicalData.slice(-3));
-        console.log('📊 Future data (first 3):', futureData.slice(0, 3));
-        
-        const historicalPrices = [...historicalData.map(d => d.price), ...Array(futureData.length).fill(null)];
-        const predictedHistory = [...predictedPastSeries, ...Array(futureData.length).fill(null)];
-        const futurePredictions = [...Array(historicalData.length - 1).fill(null), 
-                                  historicalData.length > 0 ? historicalData[historicalData.length - 1].price : null,
-                                  ...futureData.map(d => d.price)];
-        
-        // Create backtesting data for ensemble model performance visualization
-        const backtestingActuals = this.createBacktestingDataset(historicalData, 'actual');
-        const backtestingPredictions = this.createBacktestingDataset(historicalData, 'predicted');
-        
-        this.charts.price = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: allLabels,
-                datasets: [
-                    {
-                        label: 'Historical Price',
-                        data: historicalPrices,
-                        borderColor: '#FFD700',
-                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5,
-                        order: 1
-                    },
-                    {
-                        label: 'Ensemble Predictions (Backtest)',
-                        data: backtestingPredictions,
-                        borderColor: 'rgba(255, 99, 132, 0.8)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.0)',
-                        borderWidth: 2,
-                        borderDash: [2, 2],
-                        fill: false,
-                        tension: 0.4,
-                        pointRadius: 2,
-                        pointHoverRadius: 4,
-                        order: 2
-                    },
-                    {
-                        label: 'Prediction Accuracy Area',
-                        data: this.createAccuracyAreaData(backtestingActuals, backtestingPredictions),
-                        borderColor: 'rgba(255, 99, 132, 0.6)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: 'origin',
-                        tension: 0.4,
-                        pointRadius: 0,
-                        order: 0,
-                        type: 'line'
-                    },
-                    {
-                        label: 'Predicted Price (Future)',
-                        data: futurePredictions,
-                        borderColor: '#4CAF50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 3,
-                        pointHoverRadius: 5,
-                        order: 3
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#FFFFFF'
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(36, 43, 61, 0.9)',
-                        titleColor: '#FFD700',
-                        bodyColor: '#FFFFFF',
-                        borderColor: '#FFD700',
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: {
-                            color: '#B0BEC5'
+            this.charts.price = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: [
+                        {
+                            label: 'Historical Price',
+                            data: historicalPrices,
+                            borderColor: '#FFD700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            order: 1
                         },
-                        grid: {
-                            color: 'rgba(55, 71, 79, 0.5)'
+                        {
+                            label: 'Ensemble Predictions (Backtest)',
+                            data: backtestingPredictions,
+                            borderColor: 'rgba(255, 99, 132, 0.8)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.0)',
+                            borderWidth: 2,
+                            borderDash: [2, 2],
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 4,
+                            order: 2
+                        },
+                        {
+                            label: 'Prediction Accuracy Area',
+                            data: this.createAccuracyAreaData(backtestingActuals, backtestingPredictions),
+                            borderColor: 'rgba(255, 99, 132, 0.6)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            fill: 'origin',
+                            tension: 0.4,
+                            pointRadius: 0,
+                            order: 0,
+                            type: 'line'
+                        },
+                        {
+                            label: 'Predicted Price (Future)',
+                            data: futurePredictions,
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            order: 3
                         }
-                    },
-                    y: {
-                        ticks: {
-                            color: '#B0BEC5',
-                            callback: function(value) {
-                                const v = typeof value === 'number' ? value : Number(value);
-                                return '$' + (isNaN(v) ? value : v.toFixed(0));
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#FFFFFF'
                             }
                         },
-                        grid: {
-                            color: 'rgba(55, 71, 79, 0.5)'
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(36, 43, 61, 0.9)',
+                            titleColor: '#FFD700',
+                            bodyColor: '#FFFFFF',
+                            borderColor: '#FFD700',
+                            borderWidth: 1
                         }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#B0BEC5'
+                            },
+                            grid: {
+                                color: 'rgba(55, 71, 79, 0.5)'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: '#B0BEC5',
+                                callback: function(value) {
+                                    const v = typeof value === 'number' ? value : Number(value);
+                                    return '$' + (isNaN(v) ? value : v.toFixed(0));
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(55, 71, 79, 0.5)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
                 }
-            }
-        });
+            });
         } catch (error) {
             console.error('❌ Error initializing price chart:', error);
             throw error;
@@ -620,10 +635,9 @@ class GoldForecastApp {
         }
         
         try {
-        
-        const models = ['Bi-GRU', 'TCN', 'Transformer', 'Ensemble'];
-        // Support both bi_gru and biGRU style keys - ensure all models have values
-        const today = this.predictions.today || {};
+            const models = ['Bi-GRU', 'TCN', 'Transformer', 'Ensemble'];
+            // Support both bi_gru and biGRU style keys - ensure all models have values
+            const today = this.predictions.today || {};
         const predictions = [
             today.bi_gru ?? today.biGRU ?? this.currentPrice * (1 + (Math.random() - 0.5) * 0.01),
             today.tcn ?? this.currentPrice * (1 + (Math.random() - 0.5) * 0.01),
