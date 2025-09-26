@@ -1,15 +1,15 @@
 {
-  "timestamp": "2025-09-25T11:11:33.028446",
-  "current_price": 3787.10009765625,
+  "timestamp": "2025-09-26T11:10:34.640468",
+  "current_price": 3775.39990234375,
   "today_prediction": {
-    "ensemble": 3812.05,
+    "ensemble": 3721.24,
     "confidence": 91.8
   },
   "week_outlook": {
-    "high": 3812.05,
-    "low": 3608.72,
-    "end_price": 3664.51,
-    "trend": "Strongly Bearish"
+    "high": 3818.83,
+    "low": 3649.45,
+    "end_price": 3818.83,
+    "trend": "Bullish"
   },
-  "last_updated": "2025-09-25 11:11:33 UTC"
+  "last_updated": "2025-09-26 11:10:34 UTC"
 }
