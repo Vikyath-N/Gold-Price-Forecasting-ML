@@ -339,6 +339,23 @@
         "transformer": 76.79470548013391,
         "ensemble": 79.1218177674107
       }
+    },
+    {
+      "date": "2025-10-03",
+      "timestamp": "2025-10-03T11:10:21.116184",
+      "current_price": 3889.5,
+      "predictions": {
+        "bi_gru": 3857.7,
+        "tcn": 3992.8,
+        "transformer": 3904.81,
+        "ensemble": 3861.42
+      },
+      "confidence": {
+        "bi_gru": 75.4156759765625,
+        "tcn": 73.43332106517857,
+        "transformer": 76.79470548013391,
+        "ensemble": 79.1218177674107
+      }
     }
   ]
 }
