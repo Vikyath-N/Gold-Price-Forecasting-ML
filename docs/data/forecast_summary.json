@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-02-12T11:34:47.695057",
-  "current_price": 5084.2998046875,
+  "timestamp": "2026-02-13T11:25:31.626983",
+  "current_price": 4971.10009765625,
   "today_prediction": {
-    "ensemble": 5131.4,
+    "ensemble": 5033.06,
     "confidence": 91.8
   },
   "week_outlook": {
-    "high": 5351.86,
-    "low": 5131.4,
-    "end_price": 5318.34,
+    "high": 5282.53,
+    "low": 5013.54,
+    "end_price": 5255.2,
     "trend": "Strongly Bullish"
   },
-  "last_updated": "2026-02-12 11:34:47 UTC"
+  "last_updated": "2026-02-13 11:25:31 UTC"
 }
