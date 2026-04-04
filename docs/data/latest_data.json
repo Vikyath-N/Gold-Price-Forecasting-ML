@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-03T11:32:40.855173",
+  "timestamp": "2026-04-04T11:23:08.455887",
   "current_price": 4651.5,
   "historical_data": [
     {
@@ -741,5 +741,5 @@
     "price_change_5d": 0.06307850531367842,
     "price_change_20d": -0.08169305285830541
   },
-  "last_updated": "2026-04-03 11:32:40 UTC"
+  "last_updated": "2026-04-04 11:23:08 UTC"
 }
