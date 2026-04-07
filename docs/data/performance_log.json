@@ -1,23 +1,6 @@
 {
   "entries": [
     {
-      "date": "2026-03-08",
-      "timestamp": "2026-03-08T11:14:36.177682",
-      "current_price": 5158.7001953125,
-      "predictions": {
-        "bi_gru": 5195.41,
-        "tcn": 5022.32,
-        "transformer": 5094.68,
-        "ensemble": 5022.95
-      },
-      "confidence": {
-        "bi_gru": 75.4156759765625,
-        "tcn": 73.43332106517857,
-        "transformer": 76.79470548013391,
-        "ensemble": 79.1218177674107
-      }
-    },
-    {
       "date": "2026-03-09",
       "timestamp": "2026-03-09T11:29:30.163978",
       "current_price": 5094.2998046875,
@@ -502,6 +485,23 @@
         "tcn": 4641.64,
         "transformer": 4812.37,
         "ensemble": 4728.05
+      },
+      "confidence": {
+        "bi_gru": 75.4156759765625,
+        "tcn": 73.43332106517857,
+        "transformer": 76.79470548013391,
+        "ensemble": 79.1218177674107
+      }
+    },
+    {
+      "date": "2026-04-07",
+      "timestamp": "2026-04-07T11:46:33.404239",
+      "current_price": 4676.10009765625,
+      "predictions": {
+        "bi_gru": 4719.51,
+        "tcn": 4614.11,
+        "transformer": 4719.24,
+        "ensemble": 4569.16
       },
       "confidence": {
         "bi_gru": 75.4156759765625,
