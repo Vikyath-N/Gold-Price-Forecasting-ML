@@ -492,6 +492,23 @@
         "transformer": 76.79470548013391,
         "ensemble": 79.1218177674107
       }
+    },
+    {
+      "date": "2026-11-04",
+      "timestamp": "2026-11-04T18:19:59.406883",
+      "current_price": 4078.5,
+      "predictions": {
+        "bi_gru": 4130.69,
+        "tcn": 4104.43,
+        "transformer": 3983.22,
+        "ensemble": 3992.86
+      },
+      "confidence": {
+        "bi_gru": 75.4156759765625,
+        "tcn": 73.43332106517857,
+        "transformer": 76.79470548013391,
+        "ensemble": 79.1218177674107
+      }
     }
   ]
 }
